@@ -1,147 +1,224 @@
-#include <iostream>
+#include <catch2/catch_test_macros.hpp>
 #include <stdexcept>
-#include <utility>
+#include <iostream>
 
-// ============================================================================
-// РЕАЛИЗАЦИЯ УМНОГО МАССИВА (RAII)
-// ============================================================================
-
-class smart_array {
-private:
-    int* data;          // Указатель на динамический массив
-    size_t capacity;    // Максимальная вместимость (выделенный размер)
-    size_t size;        // Текущее количество добавленных элементов
-
+// --- Предоставленный класс двусвязного списка ---
+struct ListNode
+{
 public:
-    // 1. Конструктор с указанием емкости
-    explicit smart_array(size_t capacity) 
-        : capacity(capacity), size(0) {
-        if (capacity == 0) {
-            throw std::invalid_argument("Емкость массива должна быть больше 0");
+    ListNode(int value, ListNode* prev = nullptr, ListNode* next = nullptr)
+        : value(value), prev(prev), next(next)
+    {
+        if (prev != nullptr) prev->next = this;
+        if (next != nullptr) next->prev = this;
+    }
+public:
+    int value;
+    ListNode* prev;
+    ListNode* next;
+};
+
+class List
+{
+public:
+    List()
+        : m_head(new ListNode(static_cast<int>(0))), m_size(0),
+        m_tail(new ListNode(0, m_head))
+    {       
+    }
+
+    virtual ~List()
+    {
+        Clear();
+        delete m_head;
+        delete m_tail;
+    }
+
+    bool Empty() { return m_size == 0; }
+
+    unsigned long Size() { return m_size; }
+
+    void PushFront(int value)
+    {
+        new ListNode(value, m_head, m_head->next);
+        ++m_size;
+    }
+
+    void PushBack(int value)
+    {
+        new ListNode(value, m_tail->prev, m_tail);
+        ++m_size;
+    }
+
+    int PopFront()
+    {
+        if (Empty()) throw std::runtime_error("list is empty");
+        auto node = extractPrev(m_head->next->next);
+        int ret = node->value;
+        delete node;
+        return ret;
+    }
+
+    int PopBack()
+    {
+        if (Empty()) throw std::runtime_error("list is empty");
+        auto node = extractPrev(m_tail);
+        int ret = node->value;
+        delete node;
+        return ret;
+    }
+
+    void Clear()
+    {
+        auto current = m_head->next;
+        while (current != m_tail)
+        {
+            current = current->next;
+            delete extractPrev(current);
         }
-        data = new int[capacity];
     }
 
-    // 2. Деструктор (RAII: освобождение ресурсов)
-    ~smart_array() {
-        delete[] data;
+private:
+    ListNode* extractPrev(ListNode* node)
+    {
+        auto target = node->prev;
+        target->prev->next = target->next;
+        target->next->prev = target->prev;
+        --m_size;
+        return target;
     }
 
-    // 3. Конструктор копирования (Задача 2)
-    smart_array(const smart_array& other) 
-        : capacity(other.capacity), size(other.size) {
-        data = new int[capacity];
-        for (size_t i = 0; i < size; ++i) {
-            data[i] = other.data[i];
-        }
-    }
-
-    // 4. Оператор присваивания (Задача 2)
-    smart_array& operator=(const smart_array& other) {
-        // Защита от самоприсваивания (arr = arr)
-        if (this != &other) {
-            // Выделяем новую память перед удалением старой (идиома Strong Exception Guarantee)
-            int* new_data = new int[other.capacity];
-            for (size_t i = 0; i < other.size; ++i) {
-                new_data[i] = other.data[i];
-            }
-
-            // Освобождаем старую память и обновляем поля
-            delete[] data;
-            data = new_data;
-            capacity = other.capacity;
-            size = other.size;
-        }
-        return *this;
-    }
-
-    // 5. Функция добавления элемента
-    void add_element(int value) {
-        if (size >= capacity) {
-            throw std::out_of_range("Превышен лимит выделенной памяти умного массива!");
-        }
-        data[size] = value;
-        ++size;
-    }
-
-    // 6. Функция получения элемента по индексу
-    int get_element(size_t index) const {
-        if (index >= size) {
-            throw std::out_of_range("Индекс выходит за пределы заполненной области массива!");
-        }
-        return data[index];
-    }
-
-    // Дополнительный метод для получения текущего размера
-    size_t get_size() const {
-        return size;
-    }
+private:
+    ListNode* m_head;
+    ListNode* m_tail;
+    unsigned long m_size;
 };
 
 // ============================================================================
-// ТЕСТИРОВАНИЕ И ПРОВЕРКА РАБОТЫ
+// ЗАДАЧА 1. Проверка базовых функций двусвязного списка (Empty, Size, Clear)
 // ============================================================================
 
-void test_task_1() {
-    std::cout << "=== Тестирование Задачи 1 (Базовый функционал RAII) ===\n";
-    try {
-        smart_array arr(5);
-        arr.add_element(1);
-        arr.add_element(4);
-        arr.add_element(155);
-        arr.add_element(14);
-        arr.add_element(15);
+TEST_CASE("Задача 1: Базовые функции списка (Empty, Size, Clear)", "[List][Basic]")
+{
+    List list;
 
-        std::cout << "Элемент с индексом 1: " << arr.get_element(1) << " (ожидается: 4)\n";
+    SECTION("Свежесозданный список является пустым")
+    {
+        UNSCOPED_INFO("-> Проверяем Empty() и Size() для нового списка");
+        std::cout << "[LOG] Проверка пустой структуры..." << std::endl;
 
-        // Проверка исключения при выходе за пределы емкости
-        std::cout << "Попытка добавить 6-й элемент в массив емкостью 5:\n";
-        arr.add_element(999);
-    } 
-    catch (const std::exception& ex) {
-        std::cout << "Перехвачено исключение: " << ex.what() << "\n";
+        CHECK(list.Empty() == true);
+        CHECK(list.Size() == 0);
     }
-    std::cout << "\n";
+
+    SECTION("Добавление элементов изменяет Size и Empty")
+    {
+        std::cout << "[LOG] Добавляем элементы 10, 20 (Back) и 30 (Front)..." << std::endl;
+        
+        list.PushBack(10);
+        CHECK(list.Empty() == false);
+        CHECK(list.Size() == 1);
+
+        list.PushBack(20);
+        list.PushFront(30);
+        
+        std::cout << "[LOG] Текущий размер списка: " << list.Size() << std::endl;
+        CHECK(list.Size() == 3);
+        CHECK(list.Empty() == false);
+    }
+
+    SECTION("Очистка списка с помощью Clear()")
+    {
+        std::cout << "[LOG] Наполняем список перед очисткой..." << std::endl;
+        list.PushBack(1);
+        list.PushBack(2);
+        list.PushBack(3);
+
+        REQUIRE(list.Size() == 3);
+
+        std::cout << "[LOG] Вызов Clear()..." << std::endl;
+        list.Clear();
+
+        CHECK(list.Size() == 0);
+        CHECK(list.Empty() == true);
+    }
+
+    SECTION("Повторный вызов Clear() на пустом списке безопасен")
+    {
+        std::cout << "[LOG] Повторный Clear() на пустом списке..." << std::endl;
+        list.Clear();
+        CHECK(list.Size() == 0);
+        CHECK(list.Empty() == true);
+    }
 }
 
-void test_task_2() {
-    std::cout << "=== Тестирование Задачи 2 (Копирование умных массивов) ===\n";
-    try {
-        smart_array arr(5);
-        arr.add_element(1);
-        arr.add_element(4);
-        arr.add_element(155);
+// ============================================================================
+// ЗАДАЧА 2. Проверка функций PushBack, PushFront, PopBack, PopFront
+// ============================================================================
 
-        smart_array new_array(2);
-        new_array.add_element(44);
-        new_array.add_element(34);
+TEST_CASE("Задача 2: Добавление и получение элементов", "[List][Operations]")
+{
+    List list;
 
-        std::cout << "Выполняем присваивание: arr = new_array\n";
-        arr = new_array;
+    SECTION("Проверка PushFront и PushBack")
+    {
+        std::cout << "[LOG] PushFront(10) -> PushBack(20) -> PushFront(5)" << std::endl;
+        list.PushFront(10); 
+        list.PushBack(20);  
+        list.PushFront(5);   
 
-        std::cout << "Элементы arr после присваивания: ";
-        for (size_t i = 0; i < arr.get_size(); ++i) {
-            std::cout << arr.get_element(i) << " ";
+        CHECK(list.Size() == 3);
+
+        std::cout << "[LOG] Извлекаем элементы..." << std::endl;
+        CHECK(list.PopFront() == 5);  
+        CHECK(list.PopBack() == 20);  
+        CHECK(list.PopFront() == 10); 
+
+        CHECK(list.Empty() == true);
+    }
+
+    SECTION("Вызов PopFront на пустом списке вызывает исключение std::runtime_error")
+    {
+        std::cout << "[LOG] Проверка исключения для PopFront на пустом списке..." << std::endl;
+        CHECK_THROWS_AS(list.PopFront(), std::runtime_error);
+    }
+
+    SECTION("Вызов PopBack на пустом списке вызывает исключение std::runtime_error")
+    {
+        std::cout << "[LOG] Проверка исключения для PopBack на пустом списке..." << std::endl;
+        CHECK_THROWS_AS(list.PopBack(), std::runtime_error);
+    }
+
+    SECTION("Сложный сценарий (комплексное взаимодействие операций)")
+    {
+        std::cout << "[LOG] 1. Наполнение списка 5 элементами..." << std::endl;
+        for (int i = 1; i <= 5; ++i)
+        {
+            list.PushBack(i); 
         }
-        std::cout << "\n";
+        CHECK(list.Size() == 5);
 
-        // Проверка независимости массивов (глубокое копирование)
-        std::cout << "Проверка глубокого копирования (изменение new_array не влияет на arr)...\n";
-        smart_array copy_array = arr; // Конструктор копирования
-        std::cout << "Элемент 0 в скопированном массиве: " << copy_array.get_element(0) << "\n";
+        std::cout << "[LOG] 2. PopFront() и PopBack()..." << std::endl;
+        CHECK(list.PopFront() == 1); 
+        CHECK(list.PopBack() == 5);  
+        CHECK(list.Size() == 3);
+
+        std::cout << "[LOG] 3. Дополнительные PushFront(100) и PushBack(200)..." << std::endl;
+        list.PushFront(100); 
+        list.PushBack(200);  
+        CHECK(list.Size() == 5);
+
+        std::cout << "[LOG] 4. Очистка списка и повторные тесты..." << std::endl;
+        list.Clear();
+        CHECK(list.Empty() == true);
+        CHECK_THROWS_AS(list.PopFront(), std::runtime_error);
+        CHECK_THROWS_AS(list.PopBack(), std::runtime_error);
+
+        std::cout << "[LOG] 5. Добавление и удаление после Clear()..." << std::endl;
+        list.PushBack(42);
+        CHECK(list.Empty() == false);
+        CHECK(list.Size() == 1);
+        CHECK(list.PopFront() == 42);
+        CHECK(list.Empty() == true);
     }
-    catch (const std::exception& ex) {
-        std::cout << "Перехвачено исключение: " << ex.what() << "\n";
-    }
-    std::cout << "\n";
-}
-
-int main() {
-    // Настройка русской локализации для корректного вывода в консоль
-    std::setlocale(LC_ALL, "Russian");
-
-    test_task_1();
-    test_task_2();
-
-    return 0;
 }
