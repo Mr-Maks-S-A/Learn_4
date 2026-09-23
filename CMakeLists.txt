@@ -12,8 +12,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# Подключение сторонних библиотек ( Catch2 )
-add_subdirectory("${CMAKE_SOURCE_DIR}/External_library")
 
 # Создаем интерфейсную библиотеку с заголовочными файлами вашего проекта
 add_library(APP_utils INTERFACE)
@@ -21,6 +19,4 @@ target_include_directories(APP_utils INTERFACE "${CMAKE_SOURCE_DIR}/Src/include"
 
 # Создание основного исполняемого файла
 add_executable(app "${CMAKE_SOURCE_DIR}/Src/code/main.cpp")
-target_link_libraries(app PRIVATE 
-                                    APP_utils
-                                    Catch2::Catch2WithMain)
+target_link_libraries(app PRIVATE APP_utils)
