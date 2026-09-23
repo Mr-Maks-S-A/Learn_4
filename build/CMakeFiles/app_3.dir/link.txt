@@ -1,1 +1,0 @@
-/usr/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/app_3.dir/link.d CMakeFiles/app_3.dir/Src/code/main_3.cpp.o -o bin/app_3

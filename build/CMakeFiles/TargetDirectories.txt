@@ -1,5 +1,0 @@
-/mnt/HDD_DataStore/! 01 Programming_Project_Save/01 C++/Learn_4/build/CMakeFiles/app_1.dir
-/mnt/HDD_DataStore/! 01 Programming_Project_Save/01 C++/Learn_4/build/CMakeFiles/app_2.dir
-/mnt/HDD_DataStore/! 01 Programming_Project_Save/01 C++/Learn_4/build/CMakeFiles/app_3.dir
-/mnt/HDD_DataStore/! 01 Programming_Project_Save/01 C++/Learn_4/build/CMakeFiles/edit_cache.dir
-/mnt/HDD_DataStore/! 01 Programming_Project_Save/01 C++/Learn_4/build/CMakeFiles/rebuild_cache.dir
