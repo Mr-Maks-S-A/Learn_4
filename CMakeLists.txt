@@ -18,6 +18,14 @@ add_library(APP_utils INTERFACE)
 target_include_directories(APP_utils INTERFACE "${CMAKE_SOURCE_DIR}/Src/include")
 
 # Создание основного исполняемого файла
-add_executable(app_1 "${CMAKE_SOURCE_DIR}/Src/code/main.cpp")
+add_executable(app_1 "${CMAKE_SOURCE_DIR}/Src/code/main_1.cpp")
 target_link_libraries(app_1 PRIVATE APP_utils)
+
+# Создание основного исполняемого файла
+add_executable(app_2 "${CMAKE_SOURCE_DIR}/Src/code/main_2.cpp")
+target_link_libraries(app_2 PRIVATE APP_utils)
+
+# Создание основного исполняемого файла
+add_executable(app_3 "${CMAKE_SOURCE_DIR}/Src/code/main_3.cpp")
+target_link_libraries(app_3 PRIVATE APP_utils)
 
