@@ -1,49 +1,48 @@
 #include <iostream>
+#include <string>
+#include <unordered_map>
 #include <vector>
-
-// Шаблонная функция для простых типов
-template <typename T>
-T sqr(T value) {
-    return value * value;
-}
-
-// Шаблонная функция для векторов
-template <typename T>
-std::vector<T> sqr(const std::vector<T>& vec) {
-    std::vector<T> result;
-    result.reserve(vec.size());
-    for (const auto& item : vec) {
-        result.push_back(sqr(item));
-    }
-    return result;
-}
-
-// Вспомогательная функция для красивой печати вектора
-template <typename T>
-void print_vector(const std::vector<T>& vec) {
-    for (size_t i = 0; i < vec.size(); ++i) {
-        std::cout << vec[i] << (i + 1 < vec.size() ? ", " : "");
-    }
-}
+#include <algorithm>
+#include <Until/Input.hpp>
 
 int main() {
-    std::cout << "=== Задача 1. Возведение в квадрат ===" << std::endl;
+    std::cout << "========================================\n";
+    std::cout << "        ЗАДАЧА 1: ЧАСТОТА СИМВОЛОВ\n";
+    std::cout << "========================================\n\n";
 
-    // 1. Тест с простым числом
-    int number = 4;
-    std::cout << "[IN]:  " << number << std::endl;
-    std::cout << "[OUT]: " << sqr(number) << std::endl << std::endl;
+    // Использование Input.hpp для получения непустой строки
+    std::string text = get_input<std::string>("[IN]: ", 1);
 
-    // 2. Тест с вектором
-    std::vector<int> vec = {-1, 4, 8};
-    std::cout << "[IN]:  ";
-    print_vector(vec);
-    std::cout << std::endl;
+    std::cout << "\n--- ШАГ 1: Подсчет частоты символов через std::unordered_map ---\n";
+    std::unordered_map<char, int> freq_map;
+    for (char ch : text) {
+        freq_map[ch]++;
+    }
 
-    auto squared_vec = sqr(vec);
-    std::cout << "[OUT]: ";
-    print_vector(squared_vec);
-    std::cout << std::endl << std::endl;
+    std::cout << "Уникальных символов найдено: " << freq_map.size() << "\n";
+    std::cout << "Содержимое хеш-таблицы (до сортировки):\n";
+    for (const auto& [ch, count] : freq_map) {
+        if (ch == ' ') {
+            std::cout << "  ' ' (пробел) -> " << count << "\n";
+        } else if (ch == '\t') {
+            std::cout << "  '\\t' (табуляция) -> " << count << "\n";
+        } else {
+            std::cout << "  '" << ch << "' -> " << count << "\n";
+        }
+    }
+
+    std::cout << "\n--- ШАГ 2: Перенос элементов в std::vector и сортировка ---\n";
+    std::vector<std::pair<char, int>> freq_vec(freq_map.begin(), freq_map.end());
+
+    // Сортировка по убыванию частоты
+    std::sort(freq_vec.begin(), freq_vec.end(), [](const auto& a, const auto& b) {
+        return a.second > b.second;
+    });
+
+    std::cout << "\n[OUT]:\n";
+    for (const auto& [ch, count] : freq_vec) {
+        std::cout << ch << ": " << count << "\n";
+    }
 
     return 0;
 }
