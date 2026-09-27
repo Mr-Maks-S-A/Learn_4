@@ -1,0 +1,3 @@
+[submodule "ExternalLibrary/doctest"]
+	path = ExternalLibrary/doctest
+	url = https://github.com/doctest/doctest.git
