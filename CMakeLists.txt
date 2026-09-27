@@ -1,27 +1,118 @@
-# Минимально требуемая версия CMake
 cmake_minimum_required(VERSION 3.16)
 
-project(app VERSION 1.0 LANGUAGES CXX)
+project(
+    pars_app
+    VERSION 1.0
+    LANGUAGES CXX
+)
 
-set(CMAKE_CXX_STANDARD 20)
+# ============================================================
+# Настройки проекта
+# ============================================================
+
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Выходные директории для бинарников и библиотек
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+# Собирать ли тесты
+option(BUILD_TESTS "Build unit tests" OFF)
+
+# ============================================================
+# Директории вывода
+# ============================================================
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 
-# Создаем интерфейсную библиотеку с заголовочными файлами вашего проекта
-add_library(APP_utils INTERFACE)
-target_include_directories(APP_utils INTERFACE "${CMAKE_SOURCE_DIR}/Src/include")
+# ============================================================
+# Основное приложение
+# ============================================================
 
-# Создание основного исполняемого файла
-add_executable(app_1 "${CMAKE_SOURCE_DIR}/Src/code/main_1.cpp")
-target_link_libraries(app_1 PRIVATE APP_utils)
+set(APP_SOURCES
+    "${CMAKE_SOURCE_DIR}/Src/code/main.cpp"
+    "${CMAKE_SOURCE_DIR}/Src/code/ini_parser.cpp"
+)
 
-# Создание основного исполняемого файла
-add_executable(app_2 "${CMAKE_SOURCE_DIR}/Src/code/main_2.cpp")
-target_link_libraries(app_2 PRIVATE APP_utils)
+set(APP_HEADERS
+    "${CMAKE_SOURCE_DIR}/Src/include/ini_parser.hpp"
+)
 
+add_executable(
+    pars_app
+    ${APP_SOURCES}
+    ${APP_HEADERS}
+)
+
+target_include_directories(
+    pars_app
+    PRIVATE
+        "${CMAKE_SOURCE_DIR}/Src/include"
+)
+
+# ============================================================
+# Копирование ресурсов
+# ============================================================
+
+add_custom_command(
+    TARGET pars_app
+    POST_BUILD
+
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/Source"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Source"
+
+    COMMENT "Копирование папки Source..."
+)
+
+# ============================================================
+# Тесты
+# ============================================================
+
+if(BUILD_TESTS)
+    # ============================================================
+    # Внешние зависимости
+    # ============================================================
+
+    add_subdirectory("${CMAKE_SOURCE_DIR}/ExternalLibrary")
+
+
+    message(STATUS "Building tests: ON")
+
+    enable_testing()
+
+    include(CTest)
+
+    set(TEST_SOURCES
+        "${CMAKE_SOURCE_DIR}/Src/code/ini_parser.cpp"
+        "${CMAKE_SOURCE_DIR}/Tests/test_ini_parser.cpp"
+    )
+
+    add_executable(
+        pars_app_tests
+        ${TEST_SOURCES}
+    )
+
+    target_include_directories(
+        pars_app_tests
+        PRIVATE
+            "${CMAKE_SOURCE_DIR}/Src/include"
+    )
+
+    target_link_libraries(
+        pars_app_tests
+        PRIVATE
+            doctest::doctest
+    )
+
+    add_test(
+        NAME ini_parser_tests
+        COMMAND pars_app_tests
+    )
+
+else()
+
+    message(STATUS "Building tests: OFF")
+
+endif()
