@@ -199,3 +199,12 @@ TEST_CASE("пустое имя переменной — синтаксическ
 TEST_CASE("несуществующий файл бросает исключение") {
     CHECK_THROWS_AS(ini::ini_parser("this_file_does_not_exist.ini"), ini::ini_error);
 }
+
+TEST_CASE("вещественные числа принимают и точку, и запятую") {
+    temp_ini_file file("[S]\na=-5,5\nb=-5.5\nc=1,2,3\nd=3.7\n");
+    ini::ini_parser parser(file.path());
+    CHECK(parser.get_value<float>("S.a") == doctest::Approx(-5.5f));
+    CHECK(parser.get_value<double>("S.b") == doctest::Approx(-5.5));
+    CHECK_THROWS_AS(parser.get_value<double>("S.c"), ini::ini_error);
+    CHECK_THROWS_AS(parser.get_value<int>("S.d"), ini::ini_error); // хвост не отбрасывается
+}

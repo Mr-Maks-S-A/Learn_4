@@ -6,6 +6,9 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <utility>
+
+#include "value_converter.hpp"
 
 /**
  * @file ini_parser.hpp
@@ -67,9 +70,10 @@ public:
     /**
      * @brief Возвращает значение переменной, преобразованное к типу @p T.
      *
-     * @tparam T Тип результата: любой арифметический тип (через
-     *           std::from_chars) либо std::string (значение возвращается
-     *           как есть, без преобразования).
+     * @tparam T Тип результата: любой тип, для которого есть специализация
+     *           ini::value_converter<T> (std::string, bool, целые,
+     *           вещественные — с '.' или ',' в качестве разделителя).
+     *           Для остальных типов — ошибка компиляции.
      * @param path Путь вида `"секция.переменная"`. Чтобы обратиться к
      *             переменной вне любой секции, используйте путь вида
      *             `".переменная"`.
@@ -130,23 +134,15 @@ private:
                                           std::string_view line,
                                           const std::string& reason) const;
 
-    /// Преобразует "сырую" строку значения к типу @p T; std::string — как есть,
-    /// арифметические типы — через std::from_chars.
+    /// Преобразует "сырую" строку к типу @p T через ini::value_converter<T>;
+    /// при неудаче бросает ini_error с именем переменной.
     template <typename T>
     static T convert_value(const std::string& raw, const std::string& section, const std::string& key) {
-        if constexpr (std::is_same_v<T, std::string>) {
-            return raw;
-        } else {
-            static_assert(std::is_arithmetic_v<T>,
-                          "get_value<T>: T должен быть std::string или арифметическим типом");
-            T value{};
-            const auto [ptr, ec] = std::from_chars(raw.data(), raw.data() + raw.size(), value);
-            if (ec != std::errc{} || ptr != raw.data() + raw.size()) {
-                throw ini_error("Значение переменной '" + section + "." + key + "' (\"" + raw +
-                                 "\") нельзя преобразовать к запрошенному типу.");
-            }
-            return value;
+        if (auto value = value_converter<T>::convert(raw)) {
+            return *std::move(value);
         }
+        throw ini_error("Значение переменной '" + section + "." + key + "' (\"" + raw +
+                         "\") нельзя преобразовать к запрошенному типу.");
     }
 
     std::string filename_;                 ///< Путь к файлу — только для текстов ошибок.

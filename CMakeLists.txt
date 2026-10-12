@@ -60,10 +60,10 @@ add_custom_command(
     POST_BUILD
 
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_SOURCE_DIR}/Source"
-        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Source"
+        "${CMAKE_SOURCE_DIR}/Configs"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Configs"
 
-    COMMENT "Копирование папки Source..."
+    COMMENT "Копирование папки Configs..."
 )
 
 # ============================================================
